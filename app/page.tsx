@@ -1,11 +1,23 @@
 "use client"
 import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 import { MeshGradientSVG } from "@/components/mesh-gradient-svg"
 import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
+import { useDischargeSound } from "@/hooks/use-discharge-sound"
 
 export default function IntroPage() {
   const router = useRouter()
+  const { playDischarge } = useDischargeSound()
+
+  // 페이지 로드 시 방전 사운드 재생
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      playDischarge()
+    }, 500) // 애니메이션과 타이밍 맞춤
+
+    return () => clearTimeout(timer)
+  }, [playDischarge])
 
   const handleGetStarted = () => {
     router.push("/login")
