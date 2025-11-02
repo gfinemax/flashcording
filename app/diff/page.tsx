@@ -9,8 +9,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, GitCommit, Download, X } from "lucide-react"
+import { ArrowLeft, GitCommit, Download, X, ChevronLeft, ChevronRight } from "lucide-react"
 import { toast } from "sonner"
+import { useDiffSidebarStore } from "@/lib/store/diff-sidebar-store"
+import { cn } from "@/lib/utils"
 
 interface FileChange {
   id: string
@@ -25,6 +27,7 @@ interface FileChange {
 
 export default function DiffPage() {
   const router = useRouter()
+  const { isCollapsed, toggle } = useDiffSidebarStore()
   const [commitMessage, setCommitMessage] = useState("feat: Add user authentication functionality")
   const [selectedFile, setSelectedFile] = useState<string>("1")
   const [isCommitting, setIsCommitting] = useState(false)
@@ -232,56 +235,84 @@ def test_logout(app):
         </div>
 
         <div className="flex-1 flex overflow-hidden">
-          <div className="w-56
-           border-r bg-card flex flex-col">
-            <div className="p-4 border-b">
-              <h2 className="text-sm font-semibold mb-3">Commit Message</h2>
-              <Textarea
-                value={commitMessage}
-                onChange={(e) => setCommitMessage(e.target.value)}
-                placeholder="Enter commit message..."
-                className="min-h-[100px] resize-none text-sm"
-              />
+          <div
+            className={cn(
+              "border-r bg-card flex flex-col transition-all duration-300 ease-in-out",
+              isCollapsed ? "w-16" : "w-56"
+            )}
+          >
+            <div className="p-4 border-b flex items-center justify-between">
+              <h2 className={cn("text-sm font-semibold transition-opacity", isCollapsed && "opacity-0 w-0 overflow-hidden")}>
+                Commit Message
+              </h2>
+              <Button variant="ghost" size="icon" onClick={toggle} className={cn("h-8 w-8 shrink-0", isCollapsed && "mx-auto")}>
+                {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+              </Button>
             </div>
 
+            {!isCollapsed && (
+              <div className="px-4 pb-4">
+                <Textarea
+                  value={commitMessage}
+                  onChange={(e) => setCommitMessage(e.target.value)}
+                  placeholder="Enter commit message..."
+                  className="min-h-[100px] resize-none text-sm"
+                />
+              </div>
+            )}
+
             <div className="p-4 border-b">
-              <h2 className="text-sm font-semibold mb-3">Changed Files ({fileChanges.length})</h2>
+              <h2 className={cn("text-sm font-semibold transition-opacity", isCollapsed && "opacity-0 w-0 overflow-hidden")}>
+                Changed Files ({fileChanges.length})
+              </h2>
             </div>
 
             <ScrollArea className="flex-1">
-              <div className="p-4 space-y-2">
+              <div className={cn("space-y-2", isCollapsed ? "p-2" : "p-4")}>
                 {fileChanges.map((file) => (
                   <button
                     key={file.id}
                     onClick={() => setSelectedFile(file.id)}
-                    className={`w-full text-left p-3 rounded-lg transition-colors hover:bg-accent ${
-                      selectedFile === file.id ? "bg-accent" : ""
-                    }`}
+                    className={cn(
+                      "w-full text-left rounded-lg transition-colors hover:bg-accent",
+                      selectedFile === file.id ? "bg-accent" : "",
+                      isCollapsed ? "p-2" : "p-3"
+                    )}
                   >
-                    <div className="flex items-start gap-2">
-                      <Checkbox
-                        checked={file.selected}
-                        onCheckedChange={() => toggleFileSelection(file.id)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="mt-0.5"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{file.path}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge
-                            variant="outline"
-                            className="text-xs bg-green-500/10 text-green-500 border-green-500/20"
-                          >
-                            +{file.additions}
-                          </Badge>
-                          {file.deletions > 0 && (
-                            <Badge variant="outline" className="text-xs bg-red-500/10 text-red-500 border-red-500/20">
-                              -{file.deletions}
+                    {isCollapsed ? (
+                      <div className="flex items-center justify-center">
+                        <Checkbox
+                          checked={file.selected}
+                          onCheckedChange={() => toggleFileSelection(file.id)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex items-start gap-2">
+                        <Checkbox
+                          checked={file.selected}
+                          onCheckedChange={() => toggleFileSelection(file.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-0.5"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{file.path}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge
+                              variant="outline"
+                              className="text-xs bg-green-500/10 text-green-500 border-green-500/20"
+                            >
+                              +{file.additions}
                             </Badge>
-                          )}
+                            {file.deletions > 0 && (
+                              <Badge variant="outline" className="text-xs bg-red-500/10 text-red-500 border-red-500/20">
+                                -{file.deletions}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </button>
                 ))}
               </div>
