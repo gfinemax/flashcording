@@ -7,10 +7,8 @@ import { StatsGrid } from "@/components/stats-grid"
 import { BadgeGallery } from "@/components/badge-gallery"
 import { Leaderboard } from "@/components/leaderboard"
 import { ActivityFeed } from "@/components/activity-feed"
-import { Button } from "@/components/ui/button"
 import { useUserStore } from "@/lib/store/user-store"
 import { mockBadges, mockLeaderboard, mockActivities } from "@/lib/mocks/gamification"
-import { BookOpen, Code } from "lucide-react"
 
 export default function GamificationPage() {
   const router = useRouter()
@@ -61,21 +59,6 @@ export default function GamificationPage() {
               <div>
                 <h2 className="text-xl font-semibold mb-4">활동 통계</h2>
                 <StatsGrid stats={mockStats} />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button className="h-auto py-6 flex-col gap-2" onClick={() => router.push("/quiz")}>
-                  <BookOpen className="h-6 w-6" />
-                  <span>퀴즈 풀기</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-auto py-6 flex-col gap-2 bg-transparent"
-                  onClick={() => router.push("/agent")}
-                >
-                  <Code className="h-6 w-6" />
-                  <span>코드 생성하기</span>
-                </Button>
               </div>
 
               <BadgeGallery badges={mockBadges} />

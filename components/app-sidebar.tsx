@@ -54,7 +54,7 @@ export function AppSidebar() {
     <div
       className={cn(
         "flex h-full flex-col border-r bg-card transition-all duration-300 ease-in-out",
-        isCollapsed ? "w-16" : "w-64",
+        isCollapsed ? "w-16" : "w-48",
       )}
     >
       <div className="flex h-14 items-center border-b px-3 justify-between">
