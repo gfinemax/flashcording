@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Code2, GitCompare, BookOpen, Trophy, Settings, Home, Sparkles, ChevronLeft, ChevronRight } from "lucide-react"
+import { GitCompare, BookOpen, Trophy, Settings, Home, Sparkles, ChevronLeft, ChevronRight } from "lucide-react"
 import { useSidebarStore } from "@/lib/store/sidebar-store"
+import { FlashLogo } from "@/components/ui/flash-logo"
 
 const navigation = [
   {
@@ -59,12 +60,12 @@ export function AppSidebar() {
     >
       <div className="flex h-14 items-center border-b px-3 justify-between">
         <div className={cn("flex items-center gap-2 transition-opacity", isCollapsed && "opacity-0 w-0 overflow-hidden")}>
-          <Code2 className="h-6 w-6 text-primary" />
+          <FlashLogo className="h-6 w-6 text-primary" />
           <span className="text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent whitespace-nowrap">
             Flash
           </span>
         </div>
-        {isCollapsed && <Code2 className="h-6 w-6 text-primary mx-auto" />}
+        {isCollapsed && <FlashLogo className="h-6 w-6 text-primary mx-auto" />}
         <Button
           variant="ghost"
           size="icon"
