@@ -8,16 +8,20 @@ import { useDischargeSound } from "@/hooks/use-discharge-sound"
 
 export default function IntroPage() {
   const router = useRouter()
-  const { playDischarge } = useDischargeSound()
+  const { playDischarge, stopDischarge } = useDischargeSound()
 
-  // 페이지 로드 시 방전 사운드 재생
+  // 페이지 로드 시 방전 사운드 재생 (반복)
   useEffect(() => {
     const timer = setTimeout(() => {
       playDischarge()
     }, 500) // 애니메이션과 타이밍 맞춤
 
-    return () => clearTimeout(timer)
-  }, [playDischarge])
+    // 페이지를 떠날 때 사운드 정지
+    return () => {
+      clearTimeout(timer)
+      stopDischarge()
+    }
+  }, [playDischarge, stopDischarge])
 
   const handleGetStarted = () => {
     router.push("/login")

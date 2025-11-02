@@ -1,9 +1,11 @@
 "use client"
 
-import { useCallback, useRef } from "react"
+import { useCallback, useEffect, useRef } from "react"
 
 export function useDischargeSound() {
   const audioContextRef = useRef<AudioContext | null>(null)
+  const audioBufferRef = useRef<AudioBuffer | null>(null)
+  const sourceRef = useRef<AudioBufferSourceNode | null>(null)
 
   const getAudioContext = useCallback(() => {
     if (!audioContextRef.current) {
@@ -12,81 +14,80 @@ export function useDischargeSound() {
     return audioContextRef.current
   }, [])
 
+  // MP3 파일 로드
+  useEffect(() => {
+    const loadAudio = async () => {
+      try {
+        const ctx = getAudioContext()
+        const response = await fetch("/sounds/flash.mp3")
+        const arrayBuffer = await response.arrayBuffer()
+        const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+        audioBufferRef.current = audioBuffer
+      } catch (error) {
+        console.error("Failed to load discharge sound:", error)
+      }
+    }
+
+    loadAudio()
+  }, [getAudioContext])
+
   const playDischarge = useCallback(() => {
+    // 이미 재생 중이면 중복 재생 방지
+    if (sourceRef.current) {
+      return
+    }
+
+    // 오디오 버퍼가 로드되지 않았으면 재생하지 않음
+    if (!audioBufferRef.current) {
+      console.warn("Audio buffer not loaded yet")
+      return
+    }
+
     const ctx = getAudioContext()
     const currentTime = ctx.currentTime
 
-    // 메인 방전 소리 (화이트 노이즈 기반)
-    const bufferSize = ctx.sampleRate * 0.3 // 300ms
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate)
-    const data = buffer.getChannelData(0)
+    // BufferSource 생성 (MP3 재생용)
+    const source = ctx.createBufferSource()
+    source.buffer = audioBufferRef.current
 
-    // 화이트 노이즈 생성
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = Math.random() * 2 - 1
-    }
+    // 루프 설정 (무한 반복)
+    source.loop = true
 
-    const noise = ctx.createBufferSource()
-    noise.buffer = buffer
-
-    // 노이즈 필터 (전파 특성)
-    const filter = ctx.createBiquadFilter()
-    filter.type = "bandpass"
-    filter.frequency.setValueAtTime(2000, currentTime)
-    filter.frequency.exponentialRampToValueAtTime(500, currentTime + 0.3)
-    filter.Q.value = 1.5
-
-    // 볼륨 엔벨로프 (급격한 시작, 서서히 감소)
+    // GainNode로 볼륨 제어
     const gainNode = ctx.createGain()
+
+    // 페이드 인 효과 (0.1초)
     gainNode.gain.setValueAtTime(0, currentTime)
-    gainNode.gain.linearRampToValueAtTime(0.3, currentTime + 0.01) // 급격한 시작
-    gainNode.gain.exponentialRampToValueAtTime(0.01, currentTime + 0.3) // 서서히 감소
+    gainNode.gain.linearRampToValueAtTime(0.5, currentTime + 0.1)
 
-    // 전기 톤 추가 (고주파 성분)
-    const osc1 = ctx.createOscillator()
-    osc1.type = "square"
-    osc1.frequency.setValueAtTime(3000, currentTime)
-    osc1.frequency.exponentialRampToValueAtTime(1000, currentTime + 0.15)
+    // 선택적: EQ 필터 추가 (저음 강조)
+    const lowShelf = ctx.createBiquadFilter()
+    lowShelf.type = "lowshelf"
+    lowShelf.frequency.value = 200
+    lowShelf.gain.value = 3 // +3dB 저음 강조
 
-    const osc1Gain = ctx.createGain()
-    osc1Gain.gain.setValueAtTime(0, currentTime)
-    osc1Gain.gain.linearRampToValueAtTime(0.15, currentTime + 0.005)
-    osc1Gain.gain.exponentialRampToValueAtTime(0.01, currentTime + 0.15)
-
-    // 저주파 럼블 (전력 방출감)
-    const osc2 = ctx.createOscillator()
-    osc2.type = "sine"
-    osc2.frequency.setValueAtTime(60, currentTime)
-    osc2.frequency.exponentialRampToValueAtTime(30, currentTime + 0.2)
-
-    const osc2Gain = ctx.createGain()
-    osc2Gain.gain.setValueAtTime(0, currentTime)
-    osc2Gain.gain.linearRampToValueAtTime(0.2, currentTime + 0.02)
-    osc2Gain.gain.exponentialRampToValueAtTime(0.01, currentTime + 0.2)
-
-    // 연결
-    noise.connect(filter)
-    filter.connect(gainNode)
-
-    osc1.connect(osc1Gain)
-    osc1Gain.connect(gainNode)
-
-    osc2.connect(osc2Gain)
-    osc2Gain.connect(gainNode)
-
+    // 연결: source -> filter -> gain -> destination
+    source.connect(lowShelf)
+    lowShelf.connect(gainNode)
     gainNode.connect(ctx.destination)
 
-    // 재생
-    const stopTime = currentTime + 0.3
-    noise.start(currentTime)
-    noise.stop(stopTime)
+    // 재생 (무한 반복)
+    source.start(currentTime)
 
-    osc1.start(currentTime)
-    osc1.stop(currentTime + 0.15)
-
-    osc2.start(currentTime)
-    osc2.stop(currentTime + 0.2)
+    // 참조 저장
+    sourceRef.current = source
   }, [getAudioContext])
 
-  return { playDischarge }
+  const stopDischarge = useCallback(() => {
+    if (sourceRef.current) {
+      try {
+        sourceRef.current.stop()
+      } catch (error) {
+        // Already stopped
+      }
+      sourceRef.current = null
+    }
+  }, [])
+
+  return { playDischarge, stopDischarge }
 }
