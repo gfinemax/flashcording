@@ -1,0 +1,49 @@
+# Django Core
+Django==5.0.1
+django-cors-headers==4.3.1
+django-filter==24.1
+python-decouple==3.8
+
+# Django REST Framework
+djangorestframework==3.14.0
+djangorestframework-simplejwt==5.3.1
+
+# Database
+psycopg2-binary==2.9.9
+
+# LangChain & LangGraph
+langchain==0.1.9
+langchain-openai==0.0.5
+langchain-anthropic==0.1.4
+langchain-core==0.1.23
+langgraph==0.0.20
+
+# LLM APIs
+openai==1.12.0
+anthropic==0.18.1
+
+# Async/Background Tasks (optional, for production)
+celery==5.3.6
+redis==5.0.1
+
+# Code Analysis (optional)
+radon==6.0.1
+pylint==3.0.3
+
+# Testing
+pytest==8.0.0
+pytest-django==4.8.0
+pytest-cov==4.1.0
+
+# Development
+ipython==8.21.0
+black==24.1.1
+flake8==7.0.0
+
+# Production
+gunicorn==21.2.0
+whitenoise==6.6.0
+
+# Utilities
+python-dotenv==1.0.1
+requests==2.31.0
