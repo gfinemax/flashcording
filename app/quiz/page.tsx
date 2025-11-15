@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { AppLayout } from "@/components/app-layout"
 import { QuizCard } from "@/components/quiz-card"
@@ -12,11 +12,16 @@ import { Progress } from "@/components/ui/progress"
 import { useQuizStore } from "@/lib/store/quiz-store"
 import { mockQuizPools, createMockQuizSession } from "@/lib/mocks/quiz"
 import { ArrowLeft, Trophy, Target } from "lucide-react"
+import { getQuizPools, startQuizSession, completeQuiz } from "@/lib/services/quiz"
+import { env } from "@/lib/env"
+import { toast } from "sonner"
 
 export default function QuizPage() {
   const router = useRouter()
   const [selectedPool, setSelectedPool] = useState<number | null>(null)
   const [showResults, setShowResults] = useState(false)
+  const [quizPools, setQuizPools] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(false)
 
   const {
     currentSession,
@@ -31,10 +36,41 @@ export default function QuizPage() {
     reset,
   } = useQuizStore()
 
-  const handleStartQuiz = (poolId: number) => {
-    const session = createMockQuizSession(poolId)
-    setSession(session)
-    setSelectedPool(poolId)
+  // Load quiz pools on mount
+  useEffect(() => {
+    const loadQuizPools = async () => {
+      try {
+        if (env.enableMockData) {
+          setQuizPools(mockQuizPools)
+        } else {
+          const pools = await getQuizPools()
+          setQuizPools(pools)
+        }
+      } catch (error) {
+        toast.error("Failed to load quiz pools")
+        // Fallback to mock data
+        setQuizPools(mockQuizPools)
+      }
+    }
+    loadQuizPools()
+  }, [])
+
+  const handleStartQuiz = async (poolId: number) => {
+    setIsLoading(true)
+    try {
+      if (env.enableMockData) {
+        const session = createMockQuizSession(poolId)
+        setSession(session)
+      } else {
+        const session = await startQuizSession(poolId)
+        setSession(session)
+      }
+      setSelectedPool(poolId)
+    } catch (error) {
+      toast.error("Failed to start quiz")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleAnswer = (optionId: number) => {
@@ -44,8 +80,21 @@ export default function QuizPage() {
     }
   }
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentSession && currentQuestionIndex === currentSession.questions.length - 1) {
+      // Quiz completed - submit to backend
+      if (!env.enableMockData) {
+        try {
+          const result = await completeQuiz({
+            session_id: currentSession.id,
+            answers,
+          })
+          // Update score with backend result
+          console.log("Quiz result:", result)
+        } catch (error) {
+          console.error("Failed to submit quiz:", error)
+        }
+      }
       setShowResults(true)
     } else {
       nextQuestion()
@@ -198,7 +247,7 @@ export default function QuizPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {mockQuizPools.map((pool) => (
+            {quizPools.map((pool) => (
               <QuizCard key={pool.id} pool={pool} onStart={handleStartQuiz} />
             ))}
           </div>

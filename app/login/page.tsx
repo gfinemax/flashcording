@@ -16,6 +16,8 @@ import { toast } from "sonner"
 import Link from "next/link"
 import { Mail } from "lucide-react"
 import Image from "next/image"
+import { login } from "@/lib/services/auth"
+import { env } from "@/lib/env"
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -40,25 +42,39 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true)
     try {
-      // Mock login - replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      // Use real API if mock data is disabled
+      if (env.enableMockData) {
+        // Mock login for development
+        await new Promise((resolve) => setTimeout(resolve, 1000))
 
-      // Mock user data
-      const mockUser = {
-        id: "1",
-        email: data.email,
-        username: data.email.split("@")[0],
-        level: 5,
-        exp: 1250,
+        const mockUser = {
+          id: "1",
+          email: data.email,
+          username: data.email.split("@")[0],
+          level: 5,
+          exp: 1250,
+        }
+
+        const mockToken = "mock-jwt-token-12345"
+
+        setUser(mockUser, mockToken)
+      } else {
+        // Real API call
+        const response = await login(data)
+
+        // Store tokens in localStorage
+        localStorage.setItem("access_token", response.access_token)
+        localStorage.setItem("refresh_token", response.refresh_token)
+
+        // Update user store
+        setUser(response.user, response.access_token)
       }
 
-      const mockToken = "mock-jwt-token-12345"
-
-      setUser(mockUser, mockToken)
       toast.success("Login successful!")
       router.push("/agent")
-    } catch (error) {
-      toast.error("Login failed. Please try again.")
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || "Login failed. Please try again."
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
     }

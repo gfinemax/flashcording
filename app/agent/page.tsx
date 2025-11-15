@@ -28,6 +28,8 @@ import {
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
+import { generateCode, generateCodeStream } from "@/lib/services/agent"
+import { env } from "@/lib/env"
 
 // Mock templates
 const PROMPT_TEMPLATES = [
@@ -90,6 +92,54 @@ export default function AgentPage() {
       { step: 5, title: "Formatting and validating", status: "pending" },
     ]
     setThinkingSteps(steps)
+
+    // Try real API first, fallback to mock if enabled or on error
+    if (!env.enableMockData) {
+      try {
+        await generateCodeStream(
+          {
+            prompt,
+            language,
+            project_context: {
+              git_history: true,
+            },
+          },
+          {
+            onThinkingStep: (step) => {
+              setThinkingSteps((prev) =>
+                prev.map((s) => (s.step === step.step ? { ...s, ...step } : s)),
+              )
+              setProgress((step.step / steps.length) * 80, step.title)
+            },
+            onCodeChunk: (chunk) => {
+              setStreamedText((prev) => prev + chunk)
+            },
+            onComplete: (response) => {
+              setGeneratedCode(response.code)
+              setProgress(100, "Complete!")
+              setResult({ code: response.code, language })
+              toast.success("Code generated successfully!")
+            },
+            onError: (error) => {
+              console.error("Code generation error:", error)
+              toast.error("Failed to generate code. Using mock fallback.")
+              // Fall back to mock on error
+              handleMockGeneration(steps)
+            },
+          },
+        )
+        return
+      } catch (error) {
+        console.error("Failed to connect to LLM API:", error)
+        toast.error("LLM API unavailable. Using mock fallback.")
+      }
+    }
+
+    // Mock generation fallback
+    await handleMockGeneration(steps)
+  }
+
+  const handleMockGeneration = async (steps: ThinkingStep[]) => {
 
     // Simulate agent thinking process
     for (let i = 0; i < steps.length; i++) {
