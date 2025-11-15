@@ -58,12 +58,15 @@ class Activity(models.Model):
     """User activity log for gamification feed."""
 
     EVENT_TYPE_CHOICES = [
+        ('quiz_started', 'Quiz Started'),
         ('quiz_completed', 'Quiz Completed'),
         ('level_up', 'Level Up'),
         ('badge_earned', 'Badge Earned'),
         ('streak_milestone', 'Streak Milestone'),
         ('code_generated', 'Code Generated'),
+        ('code_analyzed', 'Code Analyzed'),
         ('challenge_solved', 'Challenge Solved'),
+        ('reward_redeemed', 'Reward Redeemed'),
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='activities')

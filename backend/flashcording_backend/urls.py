@@ -5,11 +5,13 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from quiz.views import QuizPoolListView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/users/', include('users.urls')),
     path('api/quiz/', include('quiz.urls')),
+    path('api/quizzes', QuizPoolListView.as_view(), name='quizzes_alias'),  # Alias for frontend compatibility
     path('api/gami/', include('gamification.urls')),
     path('api/', include('agent.urls')),
 ]
